@@ -88,6 +88,12 @@ public:
     const geometry_msgs::msg::PoseStamped & start,
     const geometry_msgs::msg::PoseStamped & goal) override;
 
+  nav_msgs::msg::Path createPlan(
+    const std::vector<geometry_msgs::msg::PoseStamped> & waypoints) override {
+      RCLCPP_ERROR(_logger, "This Planner does not support the Flag use_all_points=TRUE | length of vector %d",(int)waypoints.size());
+      return nav_msgs::msg::Path();
+    };
+
 protected:
   /**
    * @brief Callback executed when a parameter change is detected

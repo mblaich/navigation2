@@ -73,6 +73,15 @@ public:
     const geometry_msgs::msg::PoseStamped & goal,
     const std::string & planner_id);
 
+  /**
+   * @brief Method to get plan from the desired plugin
+   * @param waypoints std::vector of all Poses
+   * @return Path
+   */
+  nav_msgs::msg::Path getPlan(
+    const std::vector<geometry_msgs::msg::PoseStamped> waypoints,
+    const std::string & planner_id);
+
 protected:
   /**
    * @brief Configure member variables and initializes planner
@@ -236,6 +245,7 @@ protected:
   std::vector<std::string> planner_types_;
   double max_planner_duration_;
   std::string planner_ids_concat_;
+  bool use_all_points_;
 
   // Clock
   rclcpp::Clock steady_clock_{RCL_STEADY_TIME};

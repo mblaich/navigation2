@@ -85,6 +85,16 @@ public:
   nav_msgs::msg::Path createPlan(
     const geometry_msgs::msg::PoseStamped & start,
     const geometry_msgs::msg::PoseStamped & goal) override;
+  /**
+   * @brief Method create the plan from a starting and ending goal.
+   * @param waypoints std::vector of all Poses to go through
+   * @return      The sequence of poses to get from start to goal, if any
+   */
+  nav_msgs::msg::Path createPlan(
+    const std::vector<geometry_msgs::msg::PoseStamped> & waypoints) override {
+      RCLCPP_ERROR(logger_, "This Planner does not support the Flag use_all_points=TRUE | length of vector %d",(int)waypoints.size());
+      return nav_msgs::msg::Path();
+    };
 
 protected:
   /**

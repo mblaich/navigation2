@@ -52,6 +52,9 @@ PlannerServer::PlannerServer(const rclcpp::NodeOptions & options)
   declare_parameter("planner_plugins", default_ids_);
   declare_parameter("expected_planner_frequency", 1.0);
 
+  declare_parameter("use_all_points", false);
+  get_parameter("use_all_points", use_all_points_);
+
   get_parameter("planner_plugins", planner_ids_);
   if (planner_ids_ == default_ids_) {
     for (size_t i = 0; i < default_ids_.size(); ++i) {
@@ -374,38 +377,72 @@ PlannerServer::computePlanThroughPoses()
     }
 
     // Get consecutive paths through these points
-    std::vector<geometry_msgs::msg::PoseStamped>::iterator goal_iter;
-    geometry_msgs::msg::PoseStamped curr_start, curr_goal;
-    for (unsigned int i = 0; i != goal->goals.size(); i++) {
-      // Get starting point
-      if (i == 0) {
-        curr_start = start;
-      } else {
-        curr_start = goal->goals[i - 1];
-      }
-      curr_goal = goal->goals[i];
+    if(use_all_points_){
+      std::vector<geometry_msgs::msg::PoseStamped> waypoints;
+      geometry_msgs::msg::PoseStamped curr_start, curr_goal;
 
-      // Transform them into the global frame
-      if (!transformPosesToGlobalFrame(action_server_poses_, curr_start, curr_goal)) {
-        return;
+      for ( unsigned int i = 0; i != goal->goals.size(); i++){
+        // Get starting point
+        if (i == 0) {
+          curr_start = start;
+        } else {
+          curr_start = goal->goals[i - 1];
+        }
+        curr_goal = goal->goals[i];
+
+        // Transform them into the global frame
+        if (!transformPosesToGlobalFrame(action_server_poses_, curr_start, curr_goal)) {
+          return;
+        }
+        if (i == 0){
+          waypoints.push_back(start);
+        }
+        waypoints.push_back(curr_goal);
       }
 
-      // Get plan from start -> goal
-      nav_msgs::msg::Path curr_path = getPlan(curr_start, curr_goal, goal->planner_id);
+      nav_msgs::msg::Path curr_path = getPlan(waypoints, goal->planner_id);
 
       // check path for validity
       if (!validatePath(action_server_poses_, curr_goal, curr_path, goal->planner_id)) {
         return;
       }
 
-      // Concatenate paths together
-      concat_path.poses.insert(
-        concat_path.poses.end(), curr_path.poses.begin(), curr_path.poses.end());
-      concat_path.header = curr_path.header;
-    }
+      result->path = curr_path;
 
+    }else{
+      std::vector<geometry_msgs::msg::PoseStamped>::iterator goal_iter;
+      geometry_msgs::msg::PoseStamped curr_start, curr_goal;
+      for (unsigned int i = 0; i != goal->goals.size(); i++) {
+        // Get starting point
+        if (i == 0) {
+          curr_start = start;
+        } else {
+          curr_start = goal->goals[i - 1];
+        }
+        curr_goal = goal->goals[i];
+
+        // Transform them into the global frame
+        if (!transformPosesToGlobalFrame(action_server_poses_, curr_start, curr_goal)) {
+          return;
+        }
+
+        // Get plan from start -> goal
+        nav_msgs::msg::Path curr_path = getPlan(curr_start, curr_goal, goal->planner_id);
+
+        // check path for validity
+        if (!validatePath(action_server_poses_, curr_goal, curr_path, goal->planner_id)) {
+          return;
+        }
+
+        // Concatenate paths together
+        concat_path.poses.insert(
+          concat_path.poses.end(), curr_path.poses.begin(), curr_path.poses.end());
+        concat_path.header = curr_path.header;
+      }
+      result->path = concat_path;
+    }
+  
     // Publish the plan for visualization purposes
-    result->path = concat_path;
     publishPlan(result->path);
 
     auto cycle_duration = steady_clock_.now() - start_time;
@@ -510,6 +547,36 @@ PlannerServer::getPlan(
         "Server will use only plugin %s in server."
         " This warning will appear once.", planner_ids_concat_.c_str());
       return planners_[planners_.begin()->first]->createPlan(start, goal);
+    } else {
+      RCLCPP_ERROR(
+        get_logger(), "planner %s is not a valid planner. "
+        "Planner names are: %s", planner_id.c_str(),
+        planner_ids_concat_.c_str());
+    }
+  }
+
+  return nav_msgs::msg::Path();
+}
+
+nav_msgs::msg::Path
+PlannerServer::getPlan(
+  const std::vector<geometry_msgs::msg::PoseStamped> waypoints,
+  const std::string & planner_id)
+{
+  RCLCPP_DEBUG(
+    get_logger(), "Attempting to a find path from (%.2f, %.2f) to "
+    "(%.2f, %.2f).", waypoints.front().pose.position.x, waypoints.front().pose.position.y,
+    waypoints.back().pose.position.x, waypoints.back().pose.position.y);
+
+  if (planners_.find(planner_id) != planners_.end()) {
+    return planners_[planner_id]->createPlan(waypoints);
+  } else {
+    if (planners_.size() == 1 && planner_id.empty()) {
+      RCLCPP_WARN_ONCE(
+        get_logger(), "No planners specified in action call. "
+        "Server will use only plugin %s in server."
+        " This warning will appear once.", planner_ids_concat_.c_str());
+      return planners_[planners_.begin()->first]->createPlan(waypoints);
     } else {
       RCLCPP_ERROR(
         get_logger(), "planner %s is not a valid planner. "

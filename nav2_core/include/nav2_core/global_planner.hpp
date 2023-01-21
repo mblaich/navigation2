@@ -76,6 +76,14 @@ public:
   virtual nav_msgs::msg::Path createPlan(
     const geometry_msgs::msg::PoseStamped & start,
     const geometry_msgs::msg::PoseStamped & goal) = 0;
+
+  /**
+   * @brief Method create the plan from a starting and ending goal.
+   * @param waypoints std::vector of all Poses to go through
+   * @return      The sequence of poses to get from start to goal, if any
+   */
+  virtual nav_msgs::msg::Path createPlan(
+    const std::vector<geometry_msgs::msg::PoseStamped> & waypoints) = 0;
 };
 
 }  // namespace nav2_core
