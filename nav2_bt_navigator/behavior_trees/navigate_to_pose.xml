@@ -1,7 +1,7 @@
 <root main_tree_to_execute="MainTree">
     <BehaviorTree ID="MainTree">
         <Sequence name="Navigate">
-            <EurobotRecovery>
+            <EurobotRecovery/>
             <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
             <FollowPath path="{path}" controller_id="FollowPath"/>
         </Sequence>
