@@ -17,6 +17,7 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(nav2_util REQUIRED)
+find_package(eurobot_navigation_interfaces REQUIRED)
 
 nav2_package()
 
@@ -41,6 +42,7 @@ set(dependencies
   std_msgs
   std_srvs
   nav2_util
+  eurobot_navigation_interfaces
 )
 
 add_library(${library_name} SHARED
@@ -83,6 +85,12 @@ list(APPEND plugin_libs nav2_follow_path_action_bt_node)
 
 add_library(nav2_back_up_action_bt_node SHARED plugins/action/back_up_action.cpp)
 list(APPEND plugin_libs nav2_back_up_action_bt_node)
+
+add_library(nav2_eurobot_recovery_bt_node SHARED plugins/action/eurobot_recovery_action.cpp)
+list(APPEND plugin_libs nav2_eurobot_recovery_bt_node)
+
+add_library(nav2_eurobot_recovery_cancel_bt_node SHARED plugins/action/eurobot_recovery_cancel_node.cpp)
+list(APPEND plugin_libs nav2_eurobot_recovery_cancel_bt_node)
 
 add_library(nav2_drive_on_heading_bt_node SHARED plugins/action/drive_on_heading_action.cpp)
 list(APPEND plugin_libs nav2_drive_on_heading_bt_node)

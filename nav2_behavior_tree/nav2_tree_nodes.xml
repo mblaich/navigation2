@@ -15,6 +15,12 @@
       <input_port name="server_timeout">Server timeout</input_port>
     </Action>
 
+    <Action ID="EurobotRecovery">
+    </Action>
+
+    <Action ID="CancelEurobotRecovery">
+    </Action>
+
     <Action ID="DriveOnHeading">
       <input_port name="dist_to_travel">Distance to travel</input_port>
       <input_port name="speed">Speed at which to travel</input_port>
